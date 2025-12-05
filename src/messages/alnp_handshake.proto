@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+package alnp.handshake.v1;
+
+// Controller -> Node
+message ControllerHello {
+  bytes controller_cid = 1;
+  string manufacturer = 2;
+  string model = 3;
+  string firmware_rev = 4;
+  ProtocolVersion requested_version = 5;
+  CapabilitySet capabilities = 6;
+  KeyExchangeProposal key_exchange = 7;
+}
+
+// Node -> Controller
+message NodeHello {
+  bytes node_cid = 1;
+  string manufacturer = 2;
+  string model = 3;
+  string firmware_rev = 4;
+  ProtocolVersion supported_version = 5;
+  CapabilitySet capabilities = 6;
+  KeyExchangeProposal key_exchange = 7;
+  bool auth_required = 8;
+}
+
+// Node -> Controller challenge
+message ChallengeRequest {
+  bytes nonce = 1;
+  bytes controller_expected = 2;
+  SignatureScheme signature_scheme = 3;
+}
+
+// Controller -> Node response
+message ChallengeResponse {
+  bytes nonce = 1;
+  bytes signature = 2;
+  bytes key_confirmation = 3;
+}
+
+// Node -> Controller acknowledgement
+message SessionEstablished {
+  bytes session_id = 1;
+  ProtocolVersion agreed_version = 2;
+  bytes stream_key = 3;
+  uint64 expires_at_epoch_ms = 4;
+}
+
+// Control-plane keepalive
+message Keepalive {
+  bytes session_id = 1;
+  uint64 tick_ms = 2;
+}
+
+message ControlHeader {
+  uint64 seq = 1;
+  bytes nonce = 2;
+  uint64 timestamp_ms = 3;
+}
+
+message Acknowledge {
+  ControlHeader header = 1;
+  bool ok = 2;
+  string detail = 3;
+  bytes signature = 4;
+}
+
+message ControlEnvelope {
+  ControlHeader header = 1;
+  ControlPayload payload = 2;
+  bytes signature = 3;
+}
+
+message IdentifyRequest {
+  bool blink = 1;
+  string metadata = 2;
+}
+
+message IdentifyResponse {
+  bool acknowledged = 1;
+  string detail = 2;
+}
+
+message DeviceInfoRequest {}
+
+message DeviceInfo {
+  bytes cid = 1;
+  string manufacturer = 2;
+  string model = 3;
+  string firmware_rev = 4;
+  ProtocolVersion version = 5;
+  OperatingMode mode = 6;
+}
+
+message SetWifiCreds {
+  string ssid = 1;
+  string password = 2;
+}
+
+message UniverseMapping {
+  uint32 universe = 1;
+  uint32 output_port = 2;
+}
+
+message SetUniverseMapping {
+  repeated UniverseMapping mappings = 1;
+}
+
+enum OperatingMode {
+  MODE_NORMAL = 0;
+  MODE_CALIBRATION = 1;
+  MODE_MAINTENANCE = 2;
+}
+
+message SetMode {
+  OperatingMode mode = 1;
+}
+
+message StatusReport {
+  bool healthy = 1;
+  string detail = 2;
+  uint64 uptime_secs = 3;
+}
+
+message RestartRequest {
+  string reason = 1;
+}
+
+message ControlPayload {
+  oneof payload {
+    IdentifyRequest identify = 1;
+    IdentifyResponse identify_response = 2;
+    DeviceInfoRequest get_device_info = 3;
+    DeviceInfo device_info = 4;
+    SetWifiCreds set_wifi_creds = 5;
+    SetUniverseMapping set_universe_mapping = 6;
+    SetMode set_mode = 7;
+    StatusReport status = 8;
+    RestartRequest restart = 9;
+  }
+}
+
+message ProtocolVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 patch = 3;
+}
+
+message CapabilitySet {
+  bool supports_encryption = 1;
+  bool supports_redundancy = 2;
+  uint32 max_universes = 3;
+  string vendor_data = 4;
+}
+
+message KeyExchangeProposal {
+  string algorithm = 1;
+  bytes public_key = 2;
+}
+
+enum SignatureScheme {
+  SIG_SCHEME_ED25519 = 0;
+  SIG_SCHEME_ECDSA_P256 = 1;
+}
