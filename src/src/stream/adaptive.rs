@@ -83,6 +83,7 @@ impl ProfileBounds {
 
 #[derive(Debug, Clone)]
 pub struct AdaptationState {
+    #[allow(dead_code)]
     pub profile_intent: StreamIntent,
     pub keyframe_interval: u8,
     pub delta_depth: u8,
@@ -132,6 +133,7 @@ impl AdaptationState {
         }
     }
 
+    #[allow(dead_code)]
     fn would_violate_bounds(
         &self,
         bounds: &ProfileBounds,
@@ -178,6 +180,7 @@ impl AdaptationEvent {
 #[derive(Debug)]
 pub struct AdaptationDecision {
     pub state: AdaptationState,
+    #[allow(dead_code)]
     pub event: Option<AdaptationEvent>,
 }
 

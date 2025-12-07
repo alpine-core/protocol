@@ -4,6 +4,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use hex;
 use serde_cbor::value::Value as CborValue;
+use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::time;
 use tracing::{debug, info, trace};
@@ -14,7 +15,7 @@ use crate::messages::{Acknowledge, ControlEnvelope};
 /// CBOR-over-UDP transport for handshake and control-plane exchange.
 #[derive(Debug)]
 pub struct CborUdpTransport {
-    socket: UdpSocket,
+    socket: Arc<UdpSocket>,
     peer: SocketAddr,
     max_size: usize,
     debug_cbor: bool,
@@ -42,7 +43,28 @@ impl CborUdpTransport {
             bound, peer, max_size
         );
         Ok(Self {
-            socket,
+            socket: Arc::new(socket),
+            peer,
+            max_size,
+            debug_cbor,
+        })
+    }
+
+    pub fn from_socket(
+        socket: UdpSocket,
+        peer: SocketAddr,
+        max_size: usize,
+        debug_cbor: bool,
+    ) -> Result<Self, HandshakeError> {
+        let bound = socket
+            .local_addr()
+            .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], 0)));
+        info!(
+            "[ALPINE][HANDSHAKE][SOCKET] UDP transport using provided socket local_addr={} peer={} max_size={}",
+            bound, peer, max_size
+        );
+        Ok(Self {
+            socket: Arc::new(socket),
             peer,
             max_size,
             debug_cbor,
@@ -57,6 +79,10 @@ impl CborUdpTransport {
 
     pub fn peer_addr(&self) -> SocketAddr {
         self.peer
+    }
+
+    pub fn socket(&self) -> Arc<UdpSocket> {
+        self.socket.clone()
     }
 }
 

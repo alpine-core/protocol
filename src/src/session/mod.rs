@@ -10,7 +10,7 @@ use crate::handshake::{
     HandshakeError, HandshakeOutcome, HandshakeParticipant, HandshakeTransport,
 };
 use crate::messages::{CapabilitySet, DeviceIdentity, SessionEstablished};
-use crate::profile::{CompiledStreamProfile, StreamProfile};
+use crate::profile::CompiledStreamProfile;
 
 pub mod state;
 use state::{SessionState, SessionStateError};

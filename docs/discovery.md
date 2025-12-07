@@ -7,8 +7,8 @@ Discovery allows controllers to find endpoints on a LAN without:
 - scanning the subnet
 
 Discovery uses:
-- UDP broadcast (mandatory)
-- UDP multicast (optional)
+- UDP IPv4 broadcast (mandatory for requests)
+- Optional multicast (never required)
 
 ## 1. Request Message
 
@@ -31,6 +31,7 @@ Devices respond with:
 ## 3. Controller Requirements
 
 Controller MUST:
+- send discovery via broadcast to the well-known port
 - verify signature
 - verify nonce
 - extract and trust IPv4
@@ -41,4 +42,7 @@ Controller MUST:
 Device MUST:
 - generate or load permanent Ed25519 keypair
 - sign discovery reply
-- respond unicast to sender IP/port
+- respond **unicast** to sender IP/port
+
+Invariant:
+- Discovery packets MUST arrive as raw UDP on port 19455. If raw UDP is not observed, discovery is broken at the transport/interface layer.
