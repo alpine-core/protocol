@@ -371,7 +371,8 @@ impl LoopbackTransport {
 
 #[cfg(test)]
 mod session_tests {
-    use super::*;
+    use crate::StreamProfile;
+use super::*;
 
     #[test]
     fn profile_lock_prevents_profile_swaps() {
