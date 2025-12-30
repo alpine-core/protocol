@@ -54,6 +54,9 @@ Before tagging:
 - [`SPEC.md`](SPEC.md)
 - [`docs/status.md`](docs/status.md)
 
+For a high-level, system-agnostic comparison of DMX-over-IP approaches (Art-Net, sACN) and how ALPINE differs architecturally, see:
+https://www.y-link.no/guides/art-net-vs-sacn-vs-alpine
+
 ## Continuous Integration
 
 - `UDP E2E Tests` (`../.github/workflows/e2e-tests.yml`) validates the protocol’s UDP control/streaming paths.
