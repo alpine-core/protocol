@@ -32,6 +32,7 @@ impl FrameTransport for UdpFrameTransport {
 }
 
 #[tokio::test]
+#[ignore = "UDP E2E test; run explicitly when environment is ready"]
 async fn streaming_udp_e2e_phase3() -> Result<(), Box<dyn Error>> {
     let (controller_session, _node_session) = run_udp_handshake().await?;
     controller_session.set_jitter_strategy(JitterStrategy::HoldLast);

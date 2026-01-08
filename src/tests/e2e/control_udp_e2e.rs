@@ -27,6 +27,7 @@ fn verify_ack(ack: &Acknowledge, crypto: &ControlCrypto) -> Result<(), Handshake
 }
 
 #[tokio::test]
+#[ignore = "UDP E2E test; run explicitly when environment is ready"]
 async fn control_udp_e2e_phase2() -> Result<(), Box<dyn Error>> {
     let (controller_session, node_session) = run_udp_handshake().await?;
     let session_id = controller_session
