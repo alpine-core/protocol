@@ -12,14 +12,14 @@ use uuid::Uuid;
 
 use alpine::attestation::{verify_attester_bundle, verify_device_identity_attestation, AttesterRegistry};
 use alpine::control::{ControlClient, ControlCrypto, ControlResponder};
-use alpine::crypto::X25519KeyExchange;
+use alpine::crypto::{identity::NodeCredentials, X25519KeyExchange};
 use alpine::discovery::DiscoveryResponder;
 use alpine::handshake::{HandshakeContext, HandshakeError, HandshakeMessage, HandshakeTransport};
 use alpine::messages::{
     CapabilitySet, ChannelFormat, ControlOp, DeviceIdentity, ErrorCode, FrameEnvelope, MessageType,
 };
 use alpine::profile::StreamProfile;
-use alpine::session::{AlnpSession, JitterStrategy, StaticKeyAuthenticator};
+use alpine::session::{AlnpSession, Ed25519Authenticator, JitterStrategy, StaticKeyAuthenticator};
 use alpine::stream::{AlnpStream, FrameTransport};
 
 /// Simple transport bridge used to run two handshake participants in tests.
@@ -74,6 +74,15 @@ fn make_identity(name: &str) -> DeviceIdentity {
 }
 
 async fn create_sessions() -> (AlnpSession, AlnpSession) {
+    let mut device_secret = [0u8; 32];
+    OsRng.fill_bytes(&mut device_secret);
+    let device_signing = SigningKey::from_bytes(&device_secret);
+    let device_creds = NodeCredentials {
+        signing: device_signing.clone(),
+        verifying: device_signing.verifying_key(),
+    };
+    let device_pubkey = device_creds.verifying.to_bytes().to_vec();
+
     let (mut controller_transport, mut node_transport) = PipeTransport::pair();
     let controller_task = tokio::spawn(async move {
         AlnpSession::connect(
@@ -81,7 +90,7 @@ async fn create_sessions() -> (AlnpSession, AlnpSession) {
             CapabilitySet::default(),
             StaticKeyAuthenticator::default(),
             X25519KeyExchange::new(),
-            HandshakeContext::default(),
+            HandshakeContext::default().with_device_identity_pubkey(device_pubkey),
             &mut controller_transport,
         )
         .await
@@ -90,7 +99,7 @@ async fn create_sessions() -> (AlnpSession, AlnpSession) {
         AlnpSession::accept(
             make_identity("node"),
             CapabilitySet::default(),
-            StaticKeyAuthenticator::default(),
+            Ed25519Authenticator::new(device_creds),
             X25519KeyExchange::new(),
             HandshakeContext::default(),
             &mut node_transport,
