@@ -2,13 +2,15 @@ use std::convert::TryInto;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use ed25519_dalek::{Signature, SigningKey, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier};
 use rand::rngs::OsRng;
 use rand::RngCore;
+use serde::Serialize;
 use serde_json::json;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
+use alpine::attestation::{verify_attester_bundle, verify_device_identity_attestation, AttesterRegistry};
 use alpine::control::{ControlClient, ControlCrypto, ControlResponder};
 use alpine::crypto::X25519KeyExchange;
 use alpine::discovery::DiscoveryResponder;
@@ -240,4 +242,143 @@ fn discovery_reply_is_signed_and_verifiable() {
         .expect("signature must be 64 bytes");
     let sig = Signature::from_bytes(&sig_bytes);
     verifier.verify(&data, &sig).unwrap();
+}
+
+#[derive(Serialize)]
+struct AttestationPayload {
+    device_id: String,
+    #[serde(rename = "mfg")]
+    manufacturer_id: String,
+    #[serde(rename = "model")]
+    model_id: String,
+    #[serde(rename = "hw_rev")]
+    hardware_rev: String,
+    #[serde(rename = "pub_ed25519", with = "serde_bytes")]
+    pub_ed25519: Vec<u8>,
+}
+
+#[derive(Serialize)]
+struct AttestationEnvelope<'a> {
+    v: u8,
+    #[serde(with = "serde_bytes")]
+    payload: &'a [u8],
+    #[serde(with = "serde_bytes")]
+    sig: &'a [u8],
+    alg: &'a str,
+    signer_kid: &'a str,
+}
+
+#[derive(Serialize)]
+struct AttesterBundleAttester {
+    kid: String,
+    #[serde(with = "serde_bytes")]
+    pubkey: Vec<u8>,
+    alg: String,
+    status: String,
+}
+
+#[derive(Serialize)]
+struct AttesterBundlePayload {
+    v: u8,
+    issued_at: u64,
+    expires_at: u64,
+    attesters: Vec<AttesterBundleAttester>,
+}
+
+#[derive(Serialize)]
+struct AttesterBundleEnvelope<'a> {
+    v: u8,
+    #[serde(with = "serde_bytes")]
+    payload: &'a [u8],
+    #[serde(with = "serde_bytes")]
+    sig: &'a [u8],
+    alg: &'a str,
+    signer_kid: &'a str,
+}
+
+#[test]
+fn discovery_attestation_verifies() {
+    let identity = make_identity("device");
+    let mut device_secret = [0u8; 32];
+    OsRng.fill_bytes(&mut device_secret);
+    let device_signing = SigningKey::from_bytes(&device_secret);
+    let device_pubkey = device_signing.verifying_key().to_bytes().to_vec();
+
+    let mut attester_secret = [0u8; 32];
+    OsRng.fill_bytes(&mut attester_secret);
+    let attester_signing = SigningKey::from_bytes(&attester_secret);
+    let attester_pub = attester_signing.verifying_key();
+
+    let payload = AttestationPayload {
+        device_id: identity.device_id.clone(),
+        manufacturer_id: identity.manufacturer_id.clone(),
+        model_id: identity.model_id.clone(),
+        hardware_rev: identity.hardware_rev.clone(),
+        pub_ed25519: device_pubkey.clone(),
+    };
+    let payload_bytes = serde_cbor::to_vec(&payload).unwrap();
+    let sig = attester_signing.sign(&payload_bytes).to_vec();
+
+    let envelope = AttestationEnvelope {
+        v: 1,
+        payload: &payload_bytes,
+        sig: &sig,
+        alg: "Ed25519",
+        signer_kid: "alpine-test",
+    };
+    let attestation_bytes = serde_cbor::to_vec(&envelope).unwrap();
+
+    let reply = alpine::messages::DiscoveryReply::new(
+        &identity,
+        "AA:BB:CC:DD".into(),
+        vec![0u8; 32],
+        CapabilitySet::default(),
+        vec![0u8; 64],
+        device_pubkey,
+        attestation_bytes,
+        false,
+    );
+
+    let mut registry = AttesterRegistry::new();
+    registry.insert("alpine-test", attester_pub);
+
+    verify_device_identity_attestation(&reply, &registry, std::time::SystemTime::now()).unwrap();
+}
+
+#[test]
+fn attesters_bundle_verifies_and_builds_registry() {
+    let mut root_secret = [0u8; 32];
+    OsRng.fill_bytes(&mut root_secret);
+    let root_signing = SigningKey::from_bytes(&root_secret);
+    let root_pubkey = root_signing.verifying_key().to_bytes();
+
+    let mut attester_secret = [0u8; 32];
+    OsRng.fill_bytes(&mut attester_secret);
+    let attester_signing = SigningKey::from_bytes(&attester_secret);
+
+    let payload = AttesterBundlePayload {
+        v: 1,
+        issued_at: 1,
+        expires_at: u64::MAX,
+        attesters: vec![AttesterBundleAttester {
+            kid: "alpine-attester".into(),
+            pubkey: attester_signing.verifying_key().to_bytes().to_vec(),
+            alg: "Ed25519".into(),
+            status: "active".into(),
+        }],
+    };
+    let payload_bytes = serde_cbor::to_vec(&payload).unwrap();
+    let sig = root_signing.sign(&payload_bytes).to_vec();
+    let envelope = AttesterBundleEnvelope {
+        v: 1,
+        payload: &payload_bytes,
+        sig: &sig,
+        alg: "Ed25519",
+        signer_kid: "alpine-root",
+    };
+    let bundle_bytes = serde_cbor::to_vec(&envelope).unwrap();
+
+    let verified = verify_attester_bundle(&bundle_bytes, &root_pubkey, std::time::SystemTime::now())
+        .unwrap();
+    assert!(verified.registry.get("alpine-attester").is_some());
 }

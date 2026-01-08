@@ -4,6 +4,7 @@
 //! specification documents. All messages are encoded using CBOR and cryptographically
 //! authenticated with Ed25519 + X25519 + HKDF + ChaCha20-Poly1305.
 
+pub mod attestation;
 pub mod control;
 pub mod crypto;
 pub mod device;

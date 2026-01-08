@@ -68,6 +68,12 @@ pub struct DiscoveryReply {
         alias = "device_identity_public_key"
     )]
     pub device_identity_pubkey: Vec<u8>,
+    /// Optional CBOR attestation blob from the manufacturer.
+    #[serde(with = "serde_bytes", default)]
+    pub device_identity_attestation: Vec<u8>,
+    /// Whether the device claims its identity attestation was verified.
+    #[serde(default)]
+    pub device_identity_trusted: bool,
 }
 
 impl DiscoveryReply {
@@ -78,6 +84,8 @@ impl DiscoveryReply {
         capabilities: CapabilitySet,
         signature: Vec<u8>,
         device_identity_pubkey: Vec<u8>,
+        device_identity_attestation: Vec<u8>,
+        device_identity_trusted: bool,
     ) -> Self {
         Self {
             message_type: MessageType::AlpineDiscoverReply,
@@ -92,6 +100,8 @@ impl DiscoveryReply {
             capabilities,
             signature,
             device_identity_pubkey,
+            device_identity_attestation,
+            device_identity_trusted,
         }
     }
 }

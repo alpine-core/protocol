@@ -96,6 +96,9 @@ export interface DiscoveryReply {
   server_nonce: Uint8Array;
   capabilities: CapabilitySet;
   signature: Uint8Array;
+  device_identity_pubkey?: Uint8Array;
+  device_identity_attestation?: Uint8Array;
+  device_identity_trusted?: boolean;
 }
 
 export interface SessionInit {

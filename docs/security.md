@@ -14,3 +14,9 @@ Optional features:
 - vendor-issued certificates
 - local pairing modes
 - encrypted frame streaming
+
+## Attesters bundle
+
+Controllers verify manufacturer attestations using a root-signed attesters bundle.
+ALPINE defines the bundle format and signature verification rules; distribution
+is external (e.g., Ops). Devices only emit their attestation and identity.

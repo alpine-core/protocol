@@ -80,6 +80,8 @@ impl DiscoveryResponder {
             self.capabilities.clone(),
             signature,
             pubkey,
+            Vec::new(),
+            false,
         )
     }
 }

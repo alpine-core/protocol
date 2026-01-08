@@ -70,6 +70,9 @@ class DiscoveryReply:
     server_nonce: bytes
     capabilities: CapabilitySet
     signature: bytes
+    device_identity_pubkey: bytes = b""
+    device_identity_attestation: bytes = b""
+    device_identity_trusted: bool = False
 
     def to_map(self) -> Dict[str, Any]:
         payload = asdict(self)

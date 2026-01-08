@@ -27,6 +27,8 @@ Devices respond with:
 - capabilities block
 - server_nonce
 - Ed25519 signature
+- device identity attestation (optional CBOR blob)
+- device identity trusted flag (bool; false if attestation missing/unverified)
 
 ## 3. Controller Requirements
 
@@ -34,6 +36,7 @@ Controller MUST:
 - send discovery via broadcast to the well-known port
 - verify signature
 - verify nonce
+- verify device identity attestation before marking identities trusted
 - extract and trust IPv4
 - attach device to NIC that received the reply
 

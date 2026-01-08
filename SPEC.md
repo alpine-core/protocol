@@ -57,7 +57,7 @@ Defines two messages:
 ### 4.1 `alpine_discover`
 Sent via UDP broadcast.
 
-```json
+```
 {
 "type": "alpine_discover",
 "version": "1.0",
@@ -70,7 +70,7 @@ Sent via UDP broadcast.
 ### 4.2 `alpine_discover_reply`
 Signed by device.
 
-```json
+```
 {
 "type": "alpine_discover_reply",
 "alpine_version": "1.0",
@@ -119,7 +119,7 @@ Sessions MUST fail-closed on:
 
 Envelopes:
 
-```json
+```
 
 {
 "type": "alpine_control",
@@ -156,7 +156,7 @@ A modern frame transport replacing DMX limitations.
 
 Frame envelope:
 
-```json
+```
 {
 "type": "alpine_frame",
 "session_id": <uuid>,
