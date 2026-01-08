@@ -1,6 +1,6 @@
 [package]
 name = "alpine-protocol-rs"
-version = "2.1.0"
+version = "2.1.1"
 edition = "2021"
 description = "Authenticated Lighting Protocol (alpine): secure control-plane + streaming guard for lighting data."
 license = "Apache-2.0"

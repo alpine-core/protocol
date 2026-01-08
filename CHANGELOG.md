@@ -20,7 +20,7 @@ All notable changes to ALPINE will be documented in this file.
 - Publish embedded-focused docs: `docs/embedded-fsm.md`, `docs/embedded-wire.md`, and updated `SPEC.md` language that forbids routing by port and discovery/handshake mixing.
 - Ship scaffolds for POSIX, ESP32, and STM32 showing how to wire the embedded core without parsing CBOR manually.
 - Introduce `alpine conformance` CLI command that drives discovery, handshake, malformed payloads, and discovery-during-handshake tests with pass/fail output.
-- Align device identity attestation validation with string `device_id` + `signer_kid` semantics and bump protocol artifacts to `2.1.0`.
+- Align device identity attestation validation with string `device_id` + `signer_kid` semantics and bump protocol artifacts to `2.1.1`.
 
 - ## [2.0.21] - 2025-12-03
 - Finalize the Rust-only runtime: publish `alpine-protocol-rs 2.0.21` and `alpine-protocol-sdk 0.1.10`, making the control helpers (`ping`, `status`, `health`, `identity`, `metadata`) and `ack.payload` semantics available only in Rust.
