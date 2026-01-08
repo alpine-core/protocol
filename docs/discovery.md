@@ -49,3 +49,37 @@ Device MUST:
 
 Invariant:
 - Discovery packets MUST arrive as raw UDP on port 19455. If raw UDP is not observed, discovery is broken at the transport/interface layer.
+
+## 5. Device identity attestation (CBOR shape)
+
+The optional `device_identity_attestation` field is a CBOR-encoded map with **string keys**.
+It is encoded as a **byte string** inside the discovery reply.
+
+Envelope:
+```
+{
+  "v": 1,
+  "payload": <bytes>,   // CBOR of the payload map below
+  "sig": <bytes>,       // Ed25519 signature over payload bytes
+  "alg": "Ed25519",
+  "signer_kid": "<string>",   // must match an attester kid in the bundle
+  "expires_at": <uint> // optional
+}
+```
+
+Payload:
+```
+{
+  "device_id": "<string>",
+  "mfg": "<string>",
+  "model": "<string>",
+  "hw_rev": "<string>",
+  "pub_ed25519": <bytes>,  // device identity pubkey, must match discovery field
+  "issued_at": <uint>,
+  "expires_at": <uint>     // optional
+}
+```
+
+Notes:
+- `device_id` must match the discovery reply `device_id` **exactly** (same encoding).
+- `signer_kid` must be a **string**, not bytes.
