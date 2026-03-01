@@ -233,9 +233,6 @@ where
         &mut self,
         mut envelope: ControlEnvelope,
     ) -> Result<Acknowledge, HandshakeError> {
-        self.seq = self.seq.wrapping_add(1);
-        envelope.seq = self.seq;
-
         let mut attempt: u8 = 0;
         loop {
             attempt += 1;

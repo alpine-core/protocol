@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use serde::de::Error as DeError;
+use serde::ser::Serializer;
 use std::collections::HashMap;
 pub const ALPINE_VERSION: &str = "1.0";
 
@@ -13,6 +15,7 @@ pub enum MessageType {
     SessionReady,
     SessionComplete,
     AlpineControl,
+    #[serde(alias = "alpine_control_reply")]
     AlpineControlAck,
     AlpineFrame,
     Keepalive,
@@ -188,6 +191,7 @@ pub struct SessionAck {
 
 /// Controller readiness marker after keys are derived.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct SessionReady {
     #[serde(rename = "type")]
     pub message_type: MessageType,
@@ -198,6 +202,7 @@ pub struct SessionReady {
 
 /// Device completion acknowledgement.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct SessionComplete {
     #[serde(rename = "type")]
     pub message_type: MessageType,
@@ -240,10 +245,40 @@ pub struct Acknowledge {
     pub seq: u64,
     pub ok: bool,
     pub detail: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_ack_payload",
+        serialize_with = "serialize_ack_payload",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub payload: Option<Vec<u8>>,
     #[serde(with = "serde_bytes")]
     pub mac: Vec<u8>,
+}
+
+fn deserialize_ack_payload<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = Option::<serde_cbor::Value>::deserialize(deserializer)?;
+    match value {
+        None => Ok(None),
+        Some(serde_cbor::Value::Bytes(bytes)) => Ok(Some(bytes)),
+        Some(other) => {
+            let bytes = serde_cbor::to_vec(&other).map_err(DeError::custom)?;
+            Ok(Some(bytes))
+        }
+    }
+}
+
+fn serialize_ack_payload<S>(payload: &Option<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    match payload {
+        None => serializer.serialize_none(),
+        Some(bytes) => serde_bytes::Serialize::serialize(bytes, serializer),
+    }
 }
 
 /// Control operations enumerated by the spec.
